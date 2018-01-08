@@ -1,5 +1,5 @@
-if shellm-ndef __DAEMON_SH; then
-shellm-define __DAEMON_SH "
+if shellm-ndef; then
+shellm-define "
   consumer_lock
   consumer_unlock
   consumer_locked
