@@ -1,15 +1,3 @@
-if shellm-ndef; then
-shellm-define "
-  consumer_lock
-  consumer_unlock
-  consumer_locked
-  consumer_unlocked
-  consumer_send
-  consumer_get
-  consumer_empty
-  consumer_consume
-  consumer"
-
 shellm-include core/init/data.sh
 
 ## \brief Provide functions to ease creation of daemon scripts.
@@ -216,5 +204,3 @@ consumer() {
     fi
   done
 }
-
-fi  #  __DAEMON_SH
