@@ -1,21 +1,21 @@
 # daemon
 Utility to help you write daemonized producers/consumers.
 
-- Authors: https://github.com/shellm-org/daemon/AUTHORS.md
-- Changelog: https://github.com/shellm-org/daemon/CHANGELOG.md
-- Contributing: https://github.com/shellm-org/daemon/CONTRIBUTING.md
-- Documentation: https://github.com/shellm-org/daemon/wiki
-- License: ISC - https://github.com/shellm-org/daemon/LICENSE
+- Authors: https://gitlab.com/shellm/daemon/AUTHORS.md
+- Changelog: https://gitlab.com/shellm/daemon/CHANGELOG.md
+- Contributing: https://gitlab.com/shellm/daemon/CONTRIBUTING.md
+- Documentation: https://gitlab.com/shellm/daemon/wiki
+- License: ISC - https://gitlab.com/shellm/daemon/LICENSE
 
 ## Installation
 Installation with [basher](https://github.com/basherpm/basher):
 ```bash
-basher install shellm-org/daemon
+basher install shellm/daemon
 ```
 
 Installation from source:
 ```bash
-git clone https://github.com/shellm-org/daemon
+git clone https://gitlab.com/shellm/daemon
 cd daemon
 sudo ./install.sh
 ```
@@ -29,7 +29,7 @@ daemon -h
 As a library:
 ```bash
 # with basher's include
-include shellm-org/daemon lib/daemon.sh
+include shellm/daemon lib/daemon.sh
 # with shellm's include
-shellm-include shellm-org/daemon lib/daemon.sh
+shellm-include shellm/daemon lib/daemon.sh
 ```
