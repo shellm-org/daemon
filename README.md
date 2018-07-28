@@ -31,5 +31,5 @@ As a library:
 # with basher's include
 include shellm/daemon lib/daemon.sh
 # with shellm's include
-shellm-include shellm/daemon lib/daemon.sh
+shellm-source shellm/daemon lib/daemon.sh
 ```

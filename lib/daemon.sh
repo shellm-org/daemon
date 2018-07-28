@@ -1,4 +1,4 @@
-shellm-include core/init/data.sh
+shellm-source core/init/data.sh
 
 ## \brief Provide functions to ease creation of daemon scripts.
 ## \desc Simple consumers:
