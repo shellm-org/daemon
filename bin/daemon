@@ -14,10 +14,9 @@
 ## \example dae runalias D1
 ## Call the D1 alias and run its commands.
 
-shellm-source core/shellman.sh
-shellm-source core/format.sh
-shellm-source core/init/data.sh
-shellm-source flow/loop.sh
+shellm-source shellm/format
+shellm-source shellm/home
+shellm-source shellm/loop
 
 [ $# -eq 0 ] && usage
 
