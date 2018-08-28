@@ -1,0 +1,118 @@
+.if n.ad l
+.nh
+
+.TH daemon.sh 1 "2018-08-28" "Shellman 0.2.2" "User Commands"
+
+.SH "NAME"
+daemon.sh \- Provide functions to ease creation of daemon scripts.
+
+.SH "DESCRIPTION"
+Simple consumers:
+
+Multiple consumers can consume the same directory.
+Each time a consumer wants to process a file, it tries to lock it.
+To lock it, it tries to create a directory named after the sha256 sum of
+the file name (file being a regular file or a directory).
+If the lock fails, it means the file is being processed by another consumer,
+and the consumer continue to the next file.
+If the lock succeeds, the consumer process the file, move the file,
+and then remove the lock.
+If all files in the directory are locked, consumers wait a certain amount of
+time before trying again to process files.
+If the directory is empty, consumers wait a certain amount of time before
+listing it again.
+
+Chained-consumers:
+
+Multiple directories can each be consumed by several consumers (note: a
+consumer consumes one and only one directory). The processed files transit
+from one directory to another, until they finally land in a not-consumed
+directory. In each directory, they are processed accordingly to what the
+consumers for this directory are doing (example: filter video files ->
+extract audio -> reencode to specific format -> normalize to N decibels ->
+move to final music folder).
+For a particular directory, consumers behave exactly like simple consumers,
+except for the following:
+
+In addition to setting a lock for the current directory
+when processing a file, consumers also set a lock (with the
+potential post-process name of the file) for the next directory in the
+chain. This is done to avoid files being processed by the next consumers
+before the files are completely moved to the next directory.
+
+.SH "ENVIRONMENT VARIABLES"
+.TP
+.B consumed_dir
+Path to directory to consume
+.TP
+.B empty_wait
+Time to wait (in seconds) when consumed directory is empty.
+.TP
+.B locked_wait
+Time to wait (in seconds) when all items in consumed directory are locked.
+
+.SH "FUNCTIONS"
+.IP "\fBsha STRING\fR" 4
+Compute sha256sum of string
+
+.I Arguments
+    \fBSTRING\fR - String to compute sum for
+
+.IP "\fBconsumer_lock NAME [DIR]\fR" 4
+Lock the given item thanks to its name
+
+.I Arguments
+    \fBNAME\fR - Name of the item to lock
+    \fBDIR \fR - Directory in which to create the lock (default to data)
+
+.IP "\fBconsumer_unlock NAME [DIR]\fR" 4
+Unlock the given item thanks to its name
+
+.I Arguments
+    \fBNAME\fR - Name of the item to unlock
+    \fBDIR \fR - Directory in which to remove the lock (default to data)
+
+.IP "\fBconsumer_locked NAME [DIR]\fR" 4
+Test if NAME is locked
+
+.I Arguments
+    \fBNAME\fR - Name of the item to test
+    \fBDIR \fR - Directory in which to check the lock (default to data)
+
+.IP "\fBconsumer_unlocked NAME [DIR]\fR" 4
+Test if NAME is unlocked
+
+.I Arguments
+    \fBNAME\fR - Name of the item to test
+    \fBDIR \fR - Directory in which to check the lock (default to data)
+
+.IP "\fBconsumer_get FILE\.\.\.\fR" 4
+Lock then move each given file into consumed directory
+
+.I Arguments
+    \fBFILE\fR - Single or multiple files to move into consumed directory
+
+.IP "\fBconsumer_send DAEMON FILE\.\.\.\fR" 4
+Lock then move each given file to consumed directory of DAEMON
+
+.I Arguments
+    \fBDAEMON\fR - The daemon to send the files to (into its consumed directory)
+    \fBFILE  \fR - Single or multiple files to move into consumed directory
+
+.IP "\fBconsumer_location\fR" 4
+Return the path to the consumed directory
+
+.IP "\fBconsumer_empty [DIR]\fR" 4
+Test if consumed directory is empty
+
+.I Arguments
+    \fBDIR\fR - Directory to check (default to consumed directory)
+
+.IP "\fBconsumer_consume NAME\fR" 4
+Consume (process) file identified by NAME. You must rewrite this function.
+
+.I Arguments
+    \fBNAME\fR - Name of the file/folder to process
+
+.IP "\fBconsumer [params] [command]\fR" 4
+Main consumer function. Handle arguments, launch the loop.

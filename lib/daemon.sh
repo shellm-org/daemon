@@ -1,5 +1,3 @@
-shellm-source core/init/data.sh
-
 ## \brief Provide functions to ease creation of daemon scripts.
 ## \desc Simple consumers:
 ##
@@ -24,58 +22,60 @@ shellm-source core/init/data.sh
 ## directory. In each directory, they are processed accordingly to what the
 ## consumers for this directory are doing (example: filter video files ->
 ## extract audio -> reencode to specific format -> normalize to N decibels ->
-## move to final music folder)
+## move to final music folder).
 ## For a particular directory, consumers behave exactly like simple consumers,
 ## except for the following:
 ##
-##     In addition to setting a lock for the current
-##     directory when processing a file, consumers also set a lock (with the
-##     potential post-process name of the file) for the next directory in the
-##     chain. This is done to avoid files being processed by the next consumers
-##     before the files are completely moved to the next directory.
+## In addition to setting a lock for the current directory
+## when processing a file, consumers also set a lock (with the
+## potential post-process name of the file) for the next directory in the
+## chain. This is done to avoid files being processed by the next consumers
+## before the files are completely moved to the next directory.
 
-## \fn sha STRING
-## \brief Compute sha256sum of string
-## \param STRING String to compute sum for
+mkdir -p /tmp/shellm_daemon &>/dev/null
+
+## \function sha STRING
+## \function-brief Compute sha256sum of string
+## \function-argument STRING String to compute sum for
 sha() {
   echo "${1##*/}" | sha256sum | cut -d' ' -f1
 }
 
-## \fn consumer_lock NAME [DIR]
-## \brief Lock the given item thanks to its name
-## \param NAME Name of the item to lock
-## \param DIR Directory in which to create the lock (default to data)
+## \function consumer_lock NAME [DIR]
+## \function-brief Lock the given item thanks to its name
+## \function-argument NAME Name of the item to lock
+## \function-argument DIR Directory in which to create the lock (default to data)
 consumer_lock() {
-  mkdir "${2:-$set_lock_dir}/$(sha "$1")" 2>/dev/null
+  mkdir "${2:-${set_lock_dir}}/$(sha "$1")" 2>/dev/null
 }
 
-## \fn consumer_unlock NAME [DIR]
-## \brief Unlock the given item thanks to its name
-## \param NAME Name of the item to unlock
-## \param DIR Directory in which to remove the lock (default to data)
+## \function consumer_unlock NAME [DIR]
+## \function-brief Unlock the given item thanks to its name
+## \function-argument NAME Name of the item to unlock
+## \function-argument DIR Directory in which to remove the lock (default to data)
 consumer_unlock() {
-  rm -rf "${2:-$set_lock_dir}/$(sha "$1")" 2>/dev/null
+  rm -rf "${2:-${set_lock_dir}}/$(sha "$1")" 2>/dev/null
 }
 
-## \fn consumer_locked NAME [DIR]
-## \brief Test if NAME is locked
-## \param NAME Name of the item to test
-## \param DIR Directory in which to check the lock (default to data)
+## \function consumer_locked NAME [DIR]
+## \function-brief Test if NAME is locked
+## \function-argument NAME Name of the item to test
+## \function-argument DIR Directory in which to check the lock (default to data)
 consumer_locked() {
-  [ -d "${2:-$get_lock_dir}/$(sha "$1")" ]
+  [ -d "${2:-${get_lock_dir}}/$(sha "$1")" ]
 }
 
-## \fn consumer_unlocked NAME [DIR]
-## \brief Test if NAME is unlocked
-## \param NAME Name of the item to test
-## \param DIR Directory in which to check the lock (default to data)
+## \function consumer_unlocked NAME [DIR]
+## \function-brief Test if NAME is unlocked
+## \function-argument NAME Name of the item to test
+## \function-argument DIR Directory in which to check the lock (default to data)
 consumer_unlocked() {
   ! consumer_locked "$@"
 }
 
-## \fn consumer_get FILE...
-## \brief Lock then move each given file into consumed directory
-## \param FILE Single or multiple files to move into consumed directory
+## \function consumer_get FILE...
+## \function-brief Lock then move each given file into consumed directory
+## \function-argument FILE Single or multiple files to move into consumed directory
 consumer_get() {
   local get_to
   get_to="$(consumer_location)"
@@ -88,17 +88,17 @@ consumer_get() {
   done
 }
 
-## \fn consumer_send DAEMON FILE...
-## \brief Lock then move each given file to consumed directory of DAEMON
-## \param DAEMON The daemon to send the files to (into its consumed directory)
-## \param FILE Single or multiple files to move into consumed directory
+## \function consumer_send DAEMON FILE...
+## \function-brief Lock then move each given file to consumed directory of DAEMON
+## \function-argument DAEMON The daemon to send the files to (into its consumed directory)
+## \function-argument FILE Single or multiple files to move into consumed directory
 consumer_send() {
   # TODO: handle name variants
   local daemon="$1"
   local send_to
   local set_lock
   send_to="$(${daemon} location)"
-  set_lock="$(get_data_dir "${daemon}")"
+  set_lock="/tmp/shellm_daemon/${daemon}"
   shift
   local item
   for item in "$@"; do
@@ -109,31 +109,31 @@ consumer_send() {
   done
 }
 
-## \fn consumer_location
-## \brief Return the path to the consumed directory
+## \function consumer_location
+## \function-brief Return the path to the consumed directory
 consumer_location() {
   echo "${consumed_dir}"
 }
 
-## \fn consumer_empty [DIR]
-## \brief Test if consumed directory is empty
-## \param DIR Directory to check (default to consumed directory)
+## \function consumer_empty [DIR]
+## \function-brief Test if consumed directory is empty
+## \function-argument DIR Directory to check (default to consumed directory)
 consumer_empty() {
-  local dir="${1:-$consumed_dir}"
+  local dir="${1:-${consumed_dir}}"
   # shellcheck disable=SC2164
   ( [ -d "${dir}" ] && cd "${dir}"; [ "$(echo .* ./*)" = ". .. ./*" ]; )
 }
 
-## \fn consumer_consume NAME
-## \brief Consume (process) file identified by NAME. You must rewrite this function.
-## \param NAME Name of the file/folder to process
+## \function consumer_consume NAME
+## \function-brief Consume (process) file identified by NAME. You must rewrite this function.
+## \function-argument NAME Name of the file/folder to process
 consumer_consume() {
   echo "consumer: (dummy) processing $1"
   sleep 3
 }
 
-## \fn consumer [params] [command]
-## \brief Main consumer function. Handle arguments, launch the loop.
+## \function consumer [params] [command]
+## \function-brief Main consumer function. Handle arguments, launch the loop.
 consumer() {
   local command
   get_lock_dir=$(init_data)
@@ -169,7 +169,7 @@ consumer() {
     exit 1
   fi
 
-  case $command in
+  case ${command} in
     get) consumer_get "$@"; exit $? ;;
     send) consumer_send "$@"; exit $? ;;
     location) consumer_location; exit 0 ;;

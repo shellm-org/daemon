@@ -1,0 +1,70 @@
+.if n.ad l
+.nh
+
+.TH daemon 1 "2018-08-28" "Shellman 0.2.2" "User Commands"
+
+.SH "NAME"
+daemon \- wrapper for daemon (see lib/core/daemon)
+
+.SH "SYNOPSIS"
+\fBshellm-daemon\fR start|stop|kill \fIDAEMONS\fR
+.br
+\fBshellm-daemon\fR [un]register \fIDAEMONS\fR
+.br
+\fBshellm-daemon\fR startall|stopall|killall
+.br
+\fBshellm-daemon\fR alias \fINAME\fR [\fICOMMANDS\fR\.\.\.]
+.br
+\fBshellm-daemon\fR runalias \fINAME\fR
+
+.SH "DESCRIPTION"
+Start and stop daemons written with core/daemon/* libraries.
+
+.SH "OPTIONS"
+.IP "start \fIDAEMON\fR [\fIARGS\fR\.\.\.]" 4
+Start a daemon.
+
+.IP "stop \fIDAEMON\fR" 4
+Stop a daemon (will wait for its current execution to finish).
+
+.IP "kill \fIDAEMON\fR [\fISIGNAL\fR]" 4
+Immediatly terminate a daemon (will send a TERM signal by default).
+The SIGNAL argument will be fed to `kill`.
+
+.IP "register \fIDAEMONS\fR" 4
+Remember these daemons to work with `all` options.
+
+.IP "unregister \fIDAEMONS\fR" 4
+Forget these daemons. They wont work with `all` options anymore.
+
+.IP "startall [\fIARGS\fR\.\.\.]" 4
+Start all daemons, with optional ARGS.
+
+.IP "stopall Stop all daemons\." 4
+
+
+.IP "killall [\fISIGNAL\fR]" 4
+Kill all daemons with SIGNAL (default to TERM).
+
+.IP "alias \fINAME\fR [\fICOMMANDS\fR\.\.\.]" 4
+If COMMANDS are given, define a new alias named after NAME.
+If no COMMANDS are given, print the contents of alias NAME.
+
+.IP "runalias \fINAME\fR" 4
+Run the commands in alias defined by NAME.
+
+.IP "help, \fB\-h\fR, \fB\-\-help\fR" 4
+Prints this help and exit.
+
+
+.SH "EXAMPLES"
+.IP "\fBdae start reencode
+Start the daemon called reencode.
+You can then stop it with `stop reencode` or kill it with `kill reencode`.\fR" 4
+
+.IP "\fBdae alias D1 "kill reencode" "start normalize"
+Define an alias called D1 which will kill reencode daemon
+then start normalize daemon when called.\fR" 4
+
+.IP "\fBdae runalias D1
+Call the D1 alias and run its commands.\fR" 4
