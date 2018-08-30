@@ -31,8 +31,8 @@
 ## potential post-process name of the file) for the next directory in the
 ## chain. This is done to avoid files being processed by the next consumers
 ## before the files are completely moved to the next directory.
-
-mkdir -p /tmp/shellm_daemon &>/dev/null
+data_dir="/tmp/shellm_daemon/locks"
+mkdir -p "${data_dir}" &>/dev/null
 
 ## \function sha STRING
 ## \function-brief Compute sha256sum of string
@@ -98,7 +98,7 @@ consumer_send() {
   local send_to
   local set_lock
   send_to="$(${daemon} location)"
-  set_lock="/tmp/shellm_daemon/${daemon}"
+  set_lock="${data_dir}/${daemon}"
   shift
   local item
   for item in "$@"; do
@@ -136,7 +136,7 @@ consumer_consume() {
 ## \function-brief Main consumer function. Handle arguments, launch the loop.
 consumer() {
   local command
-  get_lock_dir=$(init_data)
+  get_lock_dir="${data_dir}/$(basename "$0")"
   set_lock_dir="${get_lock_dir}"
 
   while [ $# -ne 0 ]; do

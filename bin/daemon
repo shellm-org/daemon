@@ -18,9 +18,10 @@ shellm-source shellm/format
 shellm-source shellm/home
 shellm-source shellm/loop
 
-[ $# -eq 0 ] && usage
+[ $# -eq 0 ] && { doc -u "$0"; exit 1; }
 
-data_dir=$(init_data)
+data_dir="/tmp/shellm_daemon/daemons"
+mkdir -p "${data_dir}" &>/dev/null
 
 dae_start() {
   local pid daemon="$1"
@@ -145,7 +146,7 @@ main() {
     runalias) ;;
     ## \option help, -h, --help
     ## Prints this help and exit.
-    -h|--help|help) shellman "$0"; exit 0 ;;
+    -h|--help|help) doc "$0"; exit 0 ;;
   esac
 }
 
