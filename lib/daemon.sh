@@ -156,7 +156,9 @@ consumer() {
       locked-wait) WAIT_WHEN_LOCKED="$2"; shift ;;
       # \function-argument (command) get ITEM...
       # Move specified items into consumed directory
-      get) command=get; shift; break ;;
+      get)
+        # shellcheck disable=SC2209
+        command=get; shift; break ;;
       # \function-argument (command) send ITEM... DIR
       # Lock then send specified items from consumed directory to another consumer
       send) command=send; shift; break ;;

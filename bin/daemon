@@ -33,7 +33,7 @@ main() {
       if loop exists "$2"; then
         loop "$1" "$2"
       else
-        for loop_name in $(loop list | grep "^$2\.[0-9]+"); do
+        for loop_name in $(loop list | grep "^$2\\.[0-9]+"); do
           loop "$1" "${loop_name}"
         done
       fi
