@@ -1,7 +1,7 @@
 .if n.ad l
 .nh
 
-.TH daemon.sh 1 "2018-08-29" "Shellman 0.2.2" "User Commands"
+.TH daemon.sh 1 "2018-10-10" "shellman 0.4.0" "User Commands"
 
 .SH "NAME"
 daemon.sh \- Provide functions to ease creation of daemon scripts.
@@ -42,13 +42,13 @@ before the files are completely moved to the next directory.
 
 .SH "ENVIRONMENT VARIABLES"
 .TP
-.B consumed_dir
+.B CONSUMED_DIR
 Path to directory to consume
 .TP
-.B empty_wait
+.B WAIT_WHEN_EMPTY
 Time to wait (in seconds) when consumed directory is empty.
 .TP
-.B locked_wait
+.B WAIT_WHEN_LOCKED
 Time to wait (in seconds) when all items in consumed directory are locked.
 
 .SH "FUNCTIONS"
@@ -56,48 +56,48 @@ Time to wait (in seconds) when all items in consumed directory are locked.
 Compute sha256sum of string
 
 .I Arguments
-    \fBSTRING\fR - String to compute sum for
+    \fBSTRING\fR - None
 
 .IP "\fBconsumer_lock NAME [DIR]\fR" 4
 Lock the given item thanks to its name
 
 .I Arguments
-    \fBNAME\fR - Name of the item to lock
-    \fBDIR \fR - Directory in which to create the lock (default to data)
+    \fBNAME\fR - None
+    \fBDIR \fR - None
 
 .IP "\fBconsumer_unlock NAME [DIR]\fR" 4
 Unlock the given item thanks to its name
 
 .I Arguments
-    \fBNAME\fR - Name of the item to unlock
-    \fBDIR \fR - Directory in which to remove the lock (default to data)
+    \fBNAME\fR - None
+    \fBDIR \fR - None
 
 .IP "\fBconsumer_locked NAME [DIR]\fR" 4
 Test if NAME is locked
 
 .I Arguments
-    \fBNAME\fR - Name of the item to test
-    \fBDIR \fR - Directory in which to check the lock (default to data)
+    \fBNAME\fR - None
+    \fBDIR \fR - None
 
 .IP "\fBconsumer_unlocked NAME [DIR]\fR" 4
 Test if NAME is unlocked
 
 .I Arguments
-    \fBNAME\fR - Name of the item to test
-    \fBDIR \fR - Directory in which to check the lock (default to data)
+    \fBNAME\fR - None
+    \fBDIR \fR - None
 
 .IP "\fBconsumer_get FILE\.\.\.\fR" 4
 Lock then move each given file into consumed directory
 
 .I Arguments
-    \fBFILE\fR - Single or multiple files to move into consumed directory
+    \fBFILE\fR - None
 
 .IP "\fBconsumer_send DAEMON FILE\.\.\.\fR" 4
 Lock then move each given file to consumed directory of DAEMON
 
 .I Arguments
-    \fBDAEMON\fR - The daemon to send the files to (into its consumed directory)
-    \fBFILE  \fR - Single or multiple files to move into consumed directory
+    \fBDAEMON\fR - None
+    \fBFILE  \fR - None
 
 .IP "\fBconsumer_location\fR" 4
 Return the path to the consumed directory
@@ -106,13 +106,13 @@ Return the path to the consumed directory
 Test if consumed directory is empty
 
 .I Arguments
-    \fBDIR\fR - Directory to check (default to consumed directory)
+    \fBDIR\fR - None
 
 .IP "\fBconsumer_consume NAME\fR" 4
 Consume (process) file identified by NAME. You must rewrite this function.
 
 .I Arguments
-    \fBNAME\fR - Name of the file/folder to process
+    \fBNAME\fR - None
 
 .IP "\fBconsumer [params] [command]\fR" 4
 Main consumer function. Handle arguments, launch the loop.

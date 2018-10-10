@@ -1,0 +1,12 @@
+# demo: charinterval=0
+workon py36
+cdrepo shellm/core/demo
+export PROFILE_PROMPT='${debian_chroot:+($debian_chroot)}\[\033[00;34m\]shellm demo \[\033[00;35m\]\$ \[\033[00m\]'
+c() { clear; }; export -f c
+e() { exit; }; export -f e
+c
+
+termtosvg -g 100x20 demo.svg -t window_frame  # demo: charinterval=0.05; sleep 2
+
+
+e  # demo: sleep 1

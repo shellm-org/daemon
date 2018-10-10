@@ -1,5 +1,5 @@
 BINS="bin/daemon"
 LIBS="lib/daemon.sh"
-DEPS="gitlab.com/shellm/core:gitlab.com/shellm/format:gitlab.com/shellm/home"
-# BASH_COMPLETIONS="cmp/daemon.completion.bash"
-# ZSH_COMPLETIONS="cmp/daemon.completion.zsh"
+DEPS="gitlab.com/shellm/loop"
+# BASH_COMPLETIONS="cmp/daemon.comp.bash"
+# ZSH_COMPLETIONS="cmp/daemon.comp.zsh"

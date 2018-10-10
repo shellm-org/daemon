@@ -31,6 +31,9 @@
 ## potential post-process name of the file) for the next directory in the
 ## chain. This is done to avoid files being processed by the next consumers
 ## before the files are completely moved to the next directory.
+
+shellm-source shellm/loop
+
 data_dir="/tmp/shellm_daemon/locks"
 mkdir -p "${data_dir}" &>/dev/null
 
@@ -46,7 +49,7 @@ sha() {
 ## \function-argument NAME Name of the item to lock
 ## \function-argument DIR Directory in which to create the lock (default to data)
 consumer_lock() {
-  mkdir "${2:-${set_lock_dir}}/$(sha "$1")" 2>/dev/null
+  mkdir "${2:-${SET_LOCK_DIR}}/$(sha "$1")" 2>/dev/null
 }
 
 ## \function consumer_unlock NAME [DIR]
@@ -54,7 +57,7 @@ consumer_lock() {
 ## \function-argument NAME Name of the item to unlock
 ## \function-argument DIR Directory in which to remove the lock (default to data)
 consumer_unlock() {
-  rm -rf "${2:-${set_lock_dir}}/$(sha "$1")" 2>/dev/null
+  rm -rf "${2:-${SET_LOCK_DIR}}/$(sha "$1")" 2>/dev/null
 }
 
 ## \function consumer_locked NAME [DIR]
@@ -62,7 +65,7 @@ consumer_unlock() {
 ## \function-argument NAME Name of the item to test
 ## \function-argument DIR Directory in which to check the lock (default to data)
 consumer_locked() {
-  [ -d "${2:-${get_lock_dir}}/$(sha "$1")" ]
+  [ -d "${2:-${GET_LOCK_DIR}}/$(sha "$1")" ]
 }
 
 ## \function consumer_unlocked NAME [DIR]
@@ -112,14 +115,14 @@ consumer_send() {
 ## \function consumer_location
 ## \function-brief Return the path to the consumed directory
 consumer_location() {
-  echo "${consumed_dir}"
+  echo "${CONSUMED_DIR}"
 }
 
 ## \function consumer_empty [DIR]
 ## \function-brief Test if consumed directory is empty
 ## \function-argument DIR Directory to check (default to consumed directory)
 consumer_empty() {
-  local dir="${1:-${consumed_dir}}"
+  local dir="${1:-${CONSUMED_DIR}}"
   # shellcheck disable=SC2164
   ( [ -d "${dir}" ] && cd "${dir}"; [ "$(echo .* ./*)" = ". .. ./*" ]; )
 }
@@ -136,20 +139,20 @@ consumer_consume() {
 ## \function-brief Main consumer function. Handle arguments, launch the loop.
 consumer() {
   local command
-  get_lock_dir="${data_dir}/$(basename "$0")"
-  set_lock_dir="${get_lock_dir}"
+  GET_LOCK_DIR="${data_dir}/$(basename "$0")"
+  SET_LOCK_DIR="${GET_LOCK_DIR}"
 
   while [ $# -ne 0 ]; do
     case $1 in
       ## \param consume DIR
       ## Directory to consume
-      consume) consumed_dir="$2"; shift ;;
+      consume) CONSUMED_DIR="$2"; shift ;;
       ## \param empty-wait SECONDS
       ## Time to wait (in seconds) when consumed directory is empty
-      empty-wait) empty_wait="$2"; shift ;;
+      empty-wait) WAIT_WHEN_EMPTY="$2"; shift ;;
       ## \param locked-wait SECONDS
       ## Time to wait (in seconds) when item is locked
-      locked-wait) locked_wait="$2"; shift ;;
+      locked-wait) WAIT_WHEN_LOCKED="$2"; shift ;;
       ## \param (command) get ITEM...
       ## Move specified items into consumed directory
       get) command=get; shift; break ;;
@@ -163,9 +166,9 @@ consumer() {
     shift
   done
 
-  ## \env consumed_dir Path to directory to consume
-  if [ ! -d "${consumed_dir}" ]; then
-    echo "consumer: consumed dir ${consumed_dir} does not exist" >&2
+  ## \env CONSUMED_DIR Path to directory to consume
+  if [ ! -d "${CONSUMED_DIR}" ]; then
+    echo "consumer: consumed dir ${CONSUMED_DIR} does not exist" >&2
     exit 1
   fi
 
@@ -175,32 +178,37 @@ consumer() {
     location) consumer_location; exit 0 ;;
   esac
 
-  if [ -z "${empty_wait}" ]; then
-    ## \env empty_wait
+  if [ -z "${WAIT_WHEN_EMPTY}" ]; then
+    ## \env WAIT_WHEN_EMPTY
     ## Time to wait (in seconds) when consumed directory is empty.
-    empty_wait=2
+    WAIT_WHEN_EMPTY=2
   fi
 
-  if [ -z "${locked_wait}" ]; then
-    ## \env locked_wait
+  if [ -z "${WAIT_WHEN_LOCKED}" ]; then
+    ## \env WAIT_WHEN_LOCKED
     ## Time to wait (in seconds) when all items in consumed directory are locked.
-    locked_wait=0.5
+    WAIT_WHEN_LOCKED=0.5
   fi
 
-  local all_locked item
+  local all_locked item loop_name
+
+  loop_name="${DAEMON_ID}.$$"
+  loop init "${loop_name}"
+
   while true; do
-    if ! consumer_empty "${consumed_dir}"; then
+    loop control "${loop_name}" || break
+    if ! consumer_empty "${CONSUMED_DIR}"; then
       all_locked=true
-      for item in "${consumed_dir}"/*; do
+      for item in "${CONSUMED_DIR}"/*; do
         if consumer_lock "${item}"; then
           all_locked=false
           consumer_consume "${item}"
           consumer_unlock "${item}"
         fi
       done
-      ${all_locked} && sleep ${locked_wait}
+      ${all_locked} && sleep ${WAIT_WHEN_LOCKED}
     else
-      sleep ${empty_wait}
+      sleep ${WAIT_WHEN_EMPTY}
     fi
   done
 }

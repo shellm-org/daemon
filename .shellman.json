@@ -1,0 +1,12 @@
+{
+  "namespace": "shellm",
+  "project": "daemon",
+  "title": "Daemonized shell producers / consumers.",
+  "subtitle": "Utility to help you write daemonized producers/consumers.",
+  "readme_sections": [
+    "summary",
+    "demo",
+    "installation",
+    "usage"
+  ]
+}
