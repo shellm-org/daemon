@@ -38,47 +38,47 @@ data_dir="/tmp/shellm_daemon/locks"
 mkdir -p "${data_dir}" &>/dev/null
 
 ## \function sha STRING
-## \function-brief Compute sha256sum of string
-## \function-argument STRING String to compute sum for
+## \function-brief Compute sha256sum of string.
+## \function-argument STRING String to compute sum for.
 sha() {
   echo "${1##*/}" | sha256sum | cut -d' ' -f1
 }
 
 ## \function consumer_lock NAME [DIR]
-## \function-brief Lock the given item thanks to its name
-## \function-argument NAME Name of the item to lock
-## \function-argument DIR Directory in which to create the lock (default to data)
+## \function-brief Lock the given item thanks to its name.
+## \function-argument NAME Name of the item to lock.
+## \function-argument DIR Directory in which to create the lock (default to data).
 consumer_lock() {
   mkdir "${2:-${SET_LOCK_DIR}}/$(sha "$1")" 2>/dev/null
 }
 
 ## \function consumer_unlock NAME [DIR]
-## \function-brief Unlock the given item thanks to its name
-## \function-argument NAME Name of the item to unlock
-## \function-argument DIR Directory in which to remove the lock (default to data)
+## \function-brief Unlock the given item thanks to its name.
+## \function-argument NAME Name of the item to unlock.
+## \function-argument DIR Directory in which to remove the lock (default to data).
 consumer_unlock() {
   rm -rf "${2:-${SET_LOCK_DIR}}/$(sha "$1")" 2>/dev/null
 }
 
 ## \function consumer_locked NAME [DIR]
-## \function-brief Test if NAME is locked
-## \function-argument NAME Name of the item to test
-## \function-argument DIR Directory in which to check the lock (default to data)
+## \function-brief Test if NAME is locked.
+## \function-argument NAME Name of the item to test.
+## \function-argument DIR Directory in which to check the lock (default to data).
 consumer_locked() {
   [ -d "${2:-${GET_LOCK_DIR}}/$(sha "$1")" ]
 }
 
 ## \function consumer_unlocked NAME [DIR]
-## \function-brief Test if NAME is unlocked
-## \function-argument NAME Name of the item to test
-## \function-argument DIR Directory in which to check the lock (default to data)
+## \function-brief Test if NAME is unlocked.
+## \function-argument NAME Name of the item to test.
+## \function-argument DIR Directory in which to check the lock (default to data).
 consumer_unlocked() {
   ! consumer_locked "$@"
 }
 
 ## \function consumer_get FILE...
-## \function-brief Lock then move each given file into consumed directory
-## \function-argument FILE Single or multiple files to move into consumed directory
+## \function-brief Lock then move each given file into consumed directory.
+## \function-argument FILE Single or multiple files to move into consumed directory.
 consumer_get() {
   local get_to
   get_to="$(consumer_location)"
@@ -92,9 +92,9 @@ consumer_get() {
 }
 
 ## \function consumer_send DAEMON FILE...
-## \function-brief Lock then move each given file to consumed directory of DAEMON
-## \function-argument DAEMON The daemon to send the files to (into its consumed directory)
-## \function-argument FILE Single or multiple files to move into consumed directory
+## \function-brief Lock then move each given file to consumed directory of DAEMON.
+## \function-argument DAEMON The daemon to send the files to (into its consumed directory).
+## \function-argument FILE Single or multiple files to move into consumed directory.
 consumer_send() {
   # TODO: handle name variants
   local daemon="$1"
@@ -113,14 +113,14 @@ consumer_send() {
 }
 
 ## \function consumer_location
-## \function-brief Return the path to the consumed directory
+## \function-brief Return the path to the consumed directory.
 consumer_location() {
   echo "${CONSUMED_DIR}"
 }
 
 ## \function consumer_empty [DIR]
-## \function-brief Test if consumed directory is empty
-## \function-argument DIR Directory to check (default to consumed directory)
+## \function-brief Test if consumed directory is empty.
+## \function-argument DIR Directory to check (default to consumed directory).
 consumer_empty() {
   local dir="${1:-${CONSUMED_DIR}}"
   # shellcheck disable=SC2164
@@ -129,14 +129,15 @@ consumer_empty() {
 
 ## \function consumer_consume NAME
 ## \function-brief Consume (process) file identified by NAME. You must rewrite this function.
-## \function-argument NAME Name of the file/folder to process
+## \function-argument NAME Name of the file/folder to process.
 consumer_consume() {
   echo "consumer: (dummy) processing $1"
   sleep 3
 }
 
-## \function consumer [params] [command]
-## \function-brief Main consumer function. Handle arguments, launch the loop.
+# TODO: fix doc or rewrite
+# \function consumer [params] [command]
+# \function-brief Main consumer function. Handle arguments, launch the loop.
 consumer() {
   local command
   GET_LOCK_DIR="${data_dir}/$(basename "$0")"
@@ -144,29 +145,30 @@ consumer() {
 
   while [ $# -ne 0 ]; do
     case $1 in
-      ## \param consume DIR
-      ## Directory to consume
+      # \function-argument consume DIR
+      # Directory to consume
       consume) CONSUMED_DIR="$2"; shift ;;
-      ## \param empty-wait SECONDS
-      ## Time to wait (in seconds) when consumed directory is empty
+      # \function-argument empty-wait SECONDS
+      # Time to wait (in seconds) when consumed directory is empty
       empty-wait) WAIT_WHEN_EMPTY="$2"; shift ;;
-      ## \param locked-wait SECONDS
-      ## Time to wait (in seconds) when item is locked
+      # \function-argument locked-wait SECONDS
+      # Time to wait (in seconds) when item is locked
       locked-wait) WAIT_WHEN_LOCKED="$2"; shift ;;
-      ## \param (command) get ITEM...
-      ## Move specified items into consumed directory
+      # \function-argument (command) get ITEM...
+      # Move specified items into consumed directory
       get) command=get; shift; break ;;
-      ## \param (command) send ITEM... DIR
-      ## Lock then send specified items from consumed directory to another consumer
+      # \function-argument (command) send ITEM... DIR
+      # Lock then send specified items from consumed directory to another consumer
       send) command=send; shift; break ;;
-      ## \param (command) location
-      ## Return the path of the consumed directory
+      # \function-argument (command) location
+      # Return the path of the consumed directory
       location) command=location; shift; break ;;
     esac
     shift
   done
 
-  ## \env CONSUMED_DIR Path to directory to consume
+  ## \env CONSUMED_DIR
+  ## Path to directory to consume.
   if [ ! -d "${CONSUMED_DIR}" ]; then
     echo "consumer: consumed dir ${CONSUMED_DIR} does not exist" >&2
     exit 1
