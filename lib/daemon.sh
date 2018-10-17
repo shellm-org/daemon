@@ -16,9 +16,9 @@
 ##
 ## Chained-consumers:
 ##
-## Multiple directories can each be consumed by several consumers (note: a
+## Multiple directories can each be watched by several consumers (note: a
 ## consumer consumes one and only one directory). The processed files transit
-## from one directory to another, until they finally land in a not-consumed
+## from one directory to another, until they finally land in a not-watched
 ## directory. In each directory, they are processed accordingly to what the
 ## consumers for this directory are doing (example: filter video files ->
 ## extract audio -> reencode to specific format -> normalize to N decibels ->
@@ -34,180 +34,174 @@
 
 shellm-source shellm/loop
 
-data_dir="/tmp/shellm_daemon/locks"
-mkdir -p "${data_dir}" &>/dev/null
 
 ## \function sha STRING
 ## \function-brief Compute sha256sum of string.
 ## \function-argument STRING String to compute sum for.
 sha() {
-  echo "${1##*/}" | sha256sum | cut -d' ' -f1
+  shasum | cut -d' ' -f1
 }
 
-## \function consumer_lock NAME [DIR]
+## \function daemon-lock NAME [DIR]
 ## \function-brief Lock the given item thanks to its name.
 ## \function-argument NAME Name of the item to lock.
 ## \function-argument DIR Directory in which to create the lock (default to data).
-consumer_lock() {
-  mkdir "${2:-${SET_LOCK_DIR}}/$(sha "$1")" 2>/dev/null
+daemon-lock() {
+  local sum="$(sha <<<"$1")"
+  echo "daemon-lock: ${sum}"
+  mkdir "${__daemon_datadir}/${sum}"
 }
 
-## \function consumer_unlock NAME [DIR]
+## \function daemon-unlock NAME [DIR]
 ## \function-brief Unlock the given item thanks to its name.
 ## \function-argument NAME Name of the item to unlock.
 ## \function-argument DIR Directory in which to remove the lock (default to data).
-consumer_unlock() {
-  rm -rf "${2:-${SET_LOCK_DIR}}/$(sha "$1")" 2>/dev/null
+daemon-unlock() {
+  local sum="$(sha <<<"$1")"
+  echo "daemon-unlock: ${sum}"
+  rm -rf "${__daemon_datadir}/${sum}" 2>/dev/null
 }
 
-## \function consumer_locked NAME [DIR]
+## \function daemon-locked FILEPATH
 ## \function-brief Test if NAME is locked.
 ## \function-argument NAME Name of the item to test.
 ## \function-argument DIR Directory in which to check the lock (default to data).
-consumer_locked() {
-  [ -d "${2:-${GET_LOCK_DIR}}/$(sha "$1")" ]
+daemon-locked() {
+  [ -d "${__daemon_datadir}/$(sha <<<"$1")" ]
 }
 
-## \function consumer_unlocked NAME [DIR]
+## \function daemon-unlocked NAME [DIR]
 ## \function-brief Test if NAME is unlocked.
 ## \function-argument NAME Name of the item to test.
 ## \function-argument DIR Directory in which to check the lock (default to data).
-consumer_unlocked() {
-  ! consumer_locked "$@"
+daemon-unlocked() {
+  ! daemon-locked "$@"
 }
 
-## \function consumer_get FILE...
-## \function-brief Lock then move each given file into consumed directory.
-## \function-argument FILE Single or multiple files to move into consumed directory.
-consumer_get() {
-  local get_to
-  get_to="$(consumer_location)"
-  local item
-  for item in "$@"; do
-    # FIXME: if lock fails?
-    consumer_lock "${item}"
-    mv "${item}" "${get_to}"
-    consumer_unlock "${item}"
+## \function daemon-send SOURCE TARGET
+## \function-brief Lock then move each given file to watched directory of DAEMON.
+## \function-argument SOURCE Absolute or relative filepath to send.
+## \function-argument TARGET Target destination (absolute directory or file path).
+daemon-send() {
+  declare -a sources
+  local source target final_target
+
+  while [ $# -ne 1 ]; do
+    sources+=("$1")
+    shift
+  done
+
+  target="$1"
+
+  echo "daemon-send: target ${target}"
+  for source in "${sources[@]}"; do
+    echo "daemon-send: source ${source}"
+
+    if [ -d "${target}" ]; then
+      final_target="${target%/}/${source##*/}"
+    else
+      final_target="${target}"
+    fi
+    echo "daemon-send: final target ${final_target}"
+
+    echo "daemon-send: trying to acquire lock on final target"
+    while ! daemon-lock "${final_target}"; do
+      sleep "${WAIT_WHEN_SENDING:-1}"
+    done
+
+    echo "daemon-send: acquired lock on final target, sending"
+    mv "${source}" "${final_target}"
+
+    echo "daemon-send: unlocking final target"
+    daemon-unlock "${final_target}"
+
   done
 }
 
-## \function consumer_send DAEMON FILE...
-## \function-brief Lock then move each given file to consumed directory of DAEMON.
-## \function-argument DAEMON The daemon to send the files to (into its consumed directory).
-## \function-argument FILE Single or multiple files to move into consumed directory.
-consumer_send() {
-  # TODO: handle name variants
-  local daemon="$1"
-  local send_to
-  local set_lock
-  send_to="$(${daemon} location)"
-  set_lock="${data_dir}/${daemon}"
-  shift
-  local item
-  for item in "$@"; do
-    # FIXME: if lock fails?
-    consumer_lock "${item}" "${set_lock}"
-    mv "${item}" "${send_to}"
-    consumer_unlock "${item}" "${set_lock}"
-  done
-}
-
-## \function consumer_location
-## \function-brief Return the path to the consumed directory.
-consumer_location() {
-  echo "${CONSUMED_DIR}"
-}
-
-## \function consumer_empty [DIR]
-## \function-brief Test if consumed directory is empty.
-## \function-argument DIR Directory to check (default to consumed directory).
-consumer_empty() {
-  local dir="${1:-${CONSUMED_DIR}}"
+## \function daemon-empty [DIR]
+## \function-brief Test if watched directory is empty.
+## \function-argument DIR Directory to check (default to watched directory).
+daemon-empty() {
+  local dir="${1:-${WATCHED_DIR}}"
   # shellcheck disable=SC2164
   ( [ -d "${dir}" ] && cd "${dir}"; [ "$(echo .* ./*)" = ". .. ./*" ]; )
 }
 
-## \function consumer_consume NAME
+## \function daemon-process NAME
 ## \function-brief Consume (process) file identified by NAME. You must rewrite this function.
 ## \function-argument NAME Name of the file/folder to process.
-consumer_consume() {
+daemon-process() {
   echo "consumer: (dummy) processing $1"
   sleep 3
 }
 
-# TODO: fix doc or rewrite
-# \function consumer [params] [command]
-# \function-brief Main consumer function. Handle arguments, launch the loop.
-consumer() {
-  local command
-  GET_LOCK_DIR="${data_dir}/$(basename "$0")"
-  SET_LOCK_DIR="${GET_LOCK_DIR}"
+
+daemon-parse-args() {
+  ## \env WAIT_WHEN_EMPTY
+  ## Time to wait (in seconds) when watched directory is empty.
+  WAIT_WHEN_EMPTY=1
+
+  ## \env WAIT_WHEN_LOCKED
+  ## Time to wait (in seconds) when all items in watched directory are locked.
+  WAIT_WHEN_LOCKED=1
+
+  ## \env WAIT_WHEN_SENDING
+  ## Time to wait (in seconds) when file being sent is locked.
+  WAIT_WHEN_SENDING=1
+
+  declare -ga REMAINING_ARGS
 
   while [ $# -ne 0 ]; do
     case $1 in
-      # \function-argument consume DIR
-      # Directory to consume
-      consume) CONSUMED_DIR="$2"; shift ;;
-      # \function-argument empty-wait SECONDS
-      # Time to wait (in seconds) when consumed directory is empty
-      empty-wait) WAIT_WHEN_EMPTY="$2"; shift ;;
-      # \function-argument locked-wait SECONDS
+      # \option -w, -watch DIRECTORY
+      # Directory to watch.
+      -w|--watch) WATCHED_DIR="$2"; shift ;;
+      # \option -E, --wait-when-empty SECONDS
+      # Time to wait (in seconds) when watched directory is empty
+      -E|--wait-when-empty) WAIT_WHEN_EMPTY="$2"; shift ;;
+      # \option -L, --wait-when-locked SECONDS
       # Time to wait (in seconds) when item is locked
-      locked-wait) WAIT_WHEN_LOCKED="$2"; shift ;;
-      # \function-argument (command) get ITEM...
-      # Move specified items into consumed directory
-      get)
-        # shellcheck disable=SC2209
-        command=get; shift; break ;;
-      # \function-argument (command) send ITEM... DIR
-      # Lock then send specified items from consumed directory to another consumer
-      send) command=send; shift; break ;;
-      # \function-argument (command) location
-      # Return the path of the consumed directory
-      location) command=location; shift; break ;;
+      -L|--wait-when-locked) WAIT_WHEN_LOCKED="$2"; shift ;;
+      # \option -S, --wait-when-sending SECONDS
+      # Time to wait (in seconds) when file being sent is locked.
+      -S|--wait-when-sending) WAIT_WHEN_LOCKED="$2"; shift ;;
+
+      *) REMAINING_ARGS+=("$1")
     esac
     shift
   done
+}
 
-  ## \env CONSUMED_DIR
+daemon-start-processing() {
+  local __daemon_datadir
+
+  __daemon_datadir="/tmp/shellm_daemon/locks"
+  mkdir -p "${__daemon_datadir}" &>/dev/null
+  ## \env WATCHED_DIR
   ## Path to directory to consume.
-  if [ ! -d "${CONSUMED_DIR}" ]; then
-    echo "consumer: consumed dir ${CONSUMED_DIR} does not exist" >&2
-    exit 1
-  fi
-
-  case ${command} in
-    get) consumer_get "$@"; exit $? ;;
-    send) consumer_send "$@"; exit $? ;;
-    location) consumer_location; exit 0 ;;
-  esac
-
-  if [ -z "${WAIT_WHEN_EMPTY}" ]; then
-    ## \env WAIT_WHEN_EMPTY
-    ## Time to wait (in seconds) when consumed directory is empty.
-    WAIT_WHEN_EMPTY=2
-  fi
-
-  if [ -z "${WAIT_WHEN_LOCKED}" ]; then
-    ## \env WAIT_WHEN_LOCKED
-    ## Time to wait (in seconds) when all items in consumed directory are locked.
-    WAIT_WHEN_LOCKED=0.5
+  if [ ! -d "${WATCHED_DIR}" ]; then
+    mkdir -p "${WATCHED_DIR}"
   fi
 
   local all_locked item loop_name
 
-  loop_name="${DAEMON_ID}.$$"
+  loop_name="${0##*/}.$$"
   loop init "${loop_name}"
+  trap "loop stop '${loop_name}'" SIGINT
 
   while true; do
     loop control "${loop_name}" || break
-    if ! consumer_empty "${CONSUMED_DIR}"; then
+    if ! daemon-empty "${WATCHED_DIR}"; then
       all_locked=true
-      for item in "${CONSUMED_DIR}"/*; do
-        if consumer_lock "${item}"; then
+      for item in "${WATCHED_DIR}"/*; do
+        echo "${loop_name}: trying to acquire lock on ${item}"
+        if daemon-lock "${item}"; then
+          echo "${loop_name}: lock acquired on ${item}"
           all_locked=false
-          consumer_consume "${item}"
-          consumer_unlock "${item}"
+          echo "${loop_name}: processing ${item}"
+          daemon-process "${item}"
+          echo "${loop_name}: unlocking ${item}"
+          daemon-unlock "${item}"
         fi
       done
       ${all_locked} && sleep ${WAIT_WHEN_LOCKED}

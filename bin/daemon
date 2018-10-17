@@ -7,16 +7,17 @@
 ##   daemon start reencode
 ## You can then pause, resume or stop it with
 ## `daemon pause reencode`, `daemon resume reencode` or `daemon stop reencode`.
-shellm-source shellm/loop
 
-[ $# -eq 0 ] && { doc -u "$0"; exit 1; }
+source $(shellm-core-path)
+shellm-source shellm/daemon
 
-data_dir="${HOME}/.local/share/shellm_daemon/"
-mkdir -p "${data_dir}" &>/dev/null
-
+[ $# -eq 0 ] && { doc usage "$0"; exit 1; }
 
 main() {
-  local loop_name
+  local loop_name __daemon_datadir
+
+  __daemon_datadir="/tmp/shellm_daemon/locks"
+  mkdir -p "${__daemon_datadir}" &>/dev/null
 
   case "$1" in
     start)
@@ -33,11 +34,16 @@ main() {
       if loop exists "$2"; then
         loop "$1" "$2"
       else
-        for loop_name in $(loop list | grep "^$2\\.[0-9]+"); do
+        for loop_name in $(loop list | grep -E "^$2\\.[0-9]+"); do
           loop "$1" "${loop_name}"
         done
       fi
 
+    ;;
+
+    send)
+      shift
+      daemon-send "$@"
     ;;
 
     ## \option help, -h, --help
