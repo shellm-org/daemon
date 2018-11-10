@@ -11,7 +11,10 @@
 source $(shellm-core-path)
 shellm-source shellm/daemon
 
-[ $# -eq 0 ] && { doc usage "$0"; exit 1; }
+if (( $# == 0 )); then
+  doc usage "$0"
+  exit 1
+fi
 
 main() {
   local loop_name __daemon_datadir
