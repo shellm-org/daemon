@@ -47,7 +47,8 @@ sha() {
 ## \function-argument NAME Name of the item to lock.
 ## \function-argument DIR Directory in which to create the lock (default to data).
 daemon-lock() {
-  local sum="$(sha <<<"$1")"
+  local sum
+  sum="$(sha <<<"$1")"
   echo "daemon-lock: ${sum}"
   mkdir "${__daemon_datadir}/${sum}"
 }
@@ -57,9 +58,10 @@ daemon-lock() {
 ## \function-argument NAME Name of the item to unlock.
 ## \function-argument DIR Directory in which to remove the lock (default to data).
 daemon-unlock() {
-  local sum="$(sha <<<"$1")"
+  local sum
+  sum="$(sha <<<"$1")"
   echo "daemon-unlock: ${sum}"
-  rm -rf "${__daemon_datadir}/${sum}" 2>/dev/null
+  rm -rf "${__daemon_datadir:?}/${sum}" 2>/dev/null
 }
 
 ## \function daemon-locked FILEPATH
@@ -187,6 +189,7 @@ daemon-start-processing() {
 
   loop_name="${0##*/}.$$"
   loop init "${loop_name}"
+  # shellcheck disable=SC2064
   trap "loop stop '${loop_name}'" SIGINT
 
   while true; do
@@ -204,8 +207,10 @@ daemon-start-processing() {
           daemon-unlock "${item}"
         fi
       done
+      # shellcheck disable=SC2086
       ${all_locked} && sleep ${WAIT_WHEN_LOCKED}
     else
+      # shellcheck disable=SC2086
       sleep ${WAIT_WHEN_EMPTY}
     fi
   done

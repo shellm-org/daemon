@@ -8,6 +8,7 @@
 ## You can then pause, resume or stop it with
 ## `daemon pause reencode`, `daemon resume reencode` or `daemon stop reencode`.
 
+# shellcheck disable=SC1090,SC2046
 source $(shellm-core-path)
 shellm-source shellm/daemon
 
