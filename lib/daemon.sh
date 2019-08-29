@@ -32,7 +32,7 @@
 ## chain. This is done to avoid files being processed by the next consumers
 ## before the files are completely moved to the next directory.
 
-shellm-source shellm/loop
+shellm source shellm/loop
 
 
 ## \function sha STRING

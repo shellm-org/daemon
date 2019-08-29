@@ -10,7 +10,7 @@
 
 # shellcheck disable=SC1090,SC2046
 source $(shellm-core-path)
-shellm-source shellm/daemon
+shellm source shellm/daemon
 
 if (( $# == 0 )); then
   doc usage "$0"
